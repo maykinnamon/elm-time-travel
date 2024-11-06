@@ -10,10 +10,11 @@ addTimeTravel rawGame =
   }
 
 initialStateWithTimeTravel rawGame =
-  rawGame.initialState
+  {rawModel = rawGame.initialState 
+  , paused = False}
 
 viewWithTimeTravel rawGame computer model =
-  rawGame.view computer model
+  rawGame.view computer model.rawModel
 
 updateWithTimeTravel rawGame computer model =
-  rawGame.updateState computer model
+  { model | rawModel = rawGame.updateState computer model.rawModel }
