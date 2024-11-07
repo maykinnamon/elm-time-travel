@@ -66,6 +66,11 @@ updateWithTimeTravel rawGame computer model =
       | paused = False
       , history = List.take model.historyPlaybackPosition model.history
     }
+  else if keyPressed "C" computer then
+    {model 
+      | history = []
+      , rawModel = List.foldl rawGame.updateState rawGame.initialState model.history
+      }
   else if model.paused then
     model
   else 
