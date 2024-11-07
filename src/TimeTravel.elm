@@ -19,7 +19,8 @@ addTimeTravel rawGame =
 initialStateWithTimeTravel rawGame =
   {rawModel = rawGame.initialState 
   , paused = False
-  , history = []}
+  , history = []
+  , historyPlaybackPosition = 0}
 
 viewWithTimeTravel rawGame computer model =
   let
@@ -42,21 +43,35 @@ viewWithTimeTravel rawGame computer model =
     (rawGame.view computer model.rawModel) ++
       [ historyBar black 0.3 maxVisibleHistory
       , historyBar red 0.6 (List.length model.history) -- idk why this won't work?
+      , historyBar purple 0.6 model.historyPlaybackPosition
       , words white helpMessage
         |> move 0 (computer.screen.top - controlBarHeight / 2)
       ]
 
 
 updateWithTimeTravel rawGame computer model =
-  if keyPressed "T" computer then 
+  if (keyPressed "T" computer) && (computer.mouse.down)then 
+    let
+      newPlaybackPosition = min (mousePosToHistoryIndex computer) (List.length model.history)
+      replayHistory pastInputs = List.foldl rawGame.updateState rawGame.initialState pastInputs
+    in
+      { model
+        | historyPlaybackPosition = newPlaybackPosition
+        , rawModel = replayHistory (List.take newPlaybackPosition model.history)
+      }
+  else if keyPressed "T" computer then 
     {model | paused = True}
   else if keyPressed "R" computer then  
-    {model | paused = False}
+    {model 
+      | paused = False
+      , history = List.take model.historyPlaybackPosition model.history
+    }
   else if model.paused then
     model
   else 
     { model | rawModel = rawGame.updateState computer model.rawModel
-    , history = model.history ++ [computer] }
+    , history = model.history ++ [computer] 
+    , historyPlaybackPosition = List.length model.history + 1}
 
 
 keyPressed keyName computer =
@@ -64,3 +79,10 @@ keyPressed keyName computer =
   , String.toUpper keyName
   ]
     |> List.any (\key -> Set.member key computer.keyboard.keys)
+
+
+-- Converts the mouse's current position to an index within the history list
+mousePosToHistoryIndex computer =
+  (computer.mouse.x - computer.screen.left)
+    / computer.screen.width * maxVisibleHistory
+  |> round
